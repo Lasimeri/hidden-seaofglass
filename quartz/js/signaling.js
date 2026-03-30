@@ -4,8 +4,11 @@ let _ws = null;
 let _handlers = [];
 let _reconnectTimer = null;
 let _reconnectDelay = 1000;
+let _pingTimer = null;
 let _config = null;
 let _log = () => {};
+
+const PING_INTERVAL = 20000; // 20s keepalive
 
 export function setSignalingLogger(fn) { _log = fn; }
 
@@ -17,7 +20,8 @@ export function connect(workerUrl, roomId, peerId) {
 function _doConnect() {
   if (!_config) return;
   const { workerUrl, roomId, peerId } = _config;
-  const url = `${workerUrl}/ws/${roomId}`;
+  // Pass peerId in URL for DO WebSocket tagging
+  const url = `${workerUrl}/ws/${roomId}?peer=${peerId}`;
 
   _log(`connecting to signaling server...`);
 
@@ -32,12 +36,14 @@ function _doConnect() {
   _ws.onopen = () => {
     _log('signaling connected');
     _reconnectDelay = 1000;
-    send({ type: 'join', roomId: _config.roomId, peerId: _config.peerId });
+    // Start keepalive pings
+    _startPing();
   };
 
   _ws.onmessage = (e) => {
     try {
       const msg = JSON.parse(e.data);
+      if (msg.type === 'pong') return; // swallow pong responses
       _handlers.forEach(cb => cb(msg));
     } catch (err) {
       _log(`bad ws message: ${err.message}`);
@@ -47,12 +53,29 @@ function _doConnect() {
   _ws.onclose = (e) => {
     _log(`signaling disconnected (code ${e.code})`);
     _ws = null;
+    _stopPing();
     if (_config) _scheduleReconnect();
   };
 
   _ws.onerror = () => {
     // onclose will fire after this
   };
+}
+
+function _startPing() {
+  _stopPing();
+  _pingTimer = setInterval(() => {
+    if (_ws && _ws.readyState === WebSocket.OPEN) {
+      _ws.send(JSON.stringify({ type: 'ping' }));
+    }
+  }, PING_INTERVAL);
+}
+
+function _stopPing() {
+  if (_pingTimer) {
+    clearInterval(_pingTimer);
+    _pingTimer = null;
+  }
 }
 
 function _scheduleReconnect() {
@@ -77,6 +100,7 @@ export function onMessage(cb) {
 
 export function disconnect() {
   _config = null;
+  _stopPing();
   if (_reconnectTimer) {
     clearTimeout(_reconnectTimer);
     _reconnectTimer = null;

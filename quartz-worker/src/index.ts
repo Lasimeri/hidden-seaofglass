@@ -58,15 +58,21 @@ export default {
 
     const path = url.pathname;
 
-    // WebSocket signaling: /ws/{roomId}
+    // WebSocket signaling: /ws/{roomId}?peer={peerId}
     if (path.startsWith('/ws/')) {
       const roomId = path.slice(4);
       if (!roomId || roomId.length < 4) {
         return json({ error: 'invalid room ID' }, 400, origin);
       }
 
+      const peer = url.searchParams.get('peer');
+      if (!peer) {
+        return json({ error: 'peer param required' }, 400, origin);
+      }
+
       const id = env.QUARTZ_ROOM.idFromName(roomId);
       const stub = env.QUARTZ_ROOM.get(id);
+      // Forward the full request (includes Upgrade header + query params)
       return stub.fetch(request);
     }
 
