@@ -70,8 +70,15 @@ export function deletePage(doc, name) {
 }
 
 // Render a page in a sandboxed iframe
+let _resizeHandler = null;
 export async function renderPage(container, doc, name) {
   container.innerHTML = '';
+
+  // Clean up previous resize listener to prevent leaks
+  if (_resizeHandler) {
+    window.removeEventListener('message', _resizeHandler);
+    _resizeHandler = null;
+  }
 
   const page = await getPageContent(doc, name);
   if (!page) {
@@ -88,11 +95,12 @@ export async function renderPage(container, doc, name) {
   iframe.style.border = 'none';
   iframe.style.minHeight = '200px';
 
-  window.addEventListener('message', (e) => {
+  _resizeHandler = (e) => {
     if (e.data?.type === 'quartz-resize' && e.source === iframe.contentWindow) {
       iframe.style.height = `${e.data.height + 20}px`;
     }
-  });
+  };
+  window.addEventListener('message', _resizeHandler);
 
   container.appendChild(iframe);
   return iframe;
@@ -107,12 +115,13 @@ export function onPagesChange(doc, callback) {
 
 // --- helpers ---
 
-function wrapHTML(body, type) {
+export function wrapHTML(body, type) {
   let rendered = body;
   if (type === 'text') {
     rendered = `<pre>${escapeHTML(body)}</pre>`;
   }
-  // markdown would need marked.js — for now treat as HTML
+  // TODO: markdown type renders as raw HTML (no markdown parser).
+  // Adding marked.js as a dependency is deferred — would need bundling or CDN import.
   return `<!DOCTYPE html>
 <html><head>
 <meta charset="UTF-8">
@@ -126,7 +135,7 @@ function escapeHTML(str) {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-async function gzipCompress(text) {
+export async function gzipCompress(text) {
   const encoded = new TextEncoder().encode(text);
   const cs = new CompressionStream('gzip');
   const writer = cs.writable.getWriter();

@@ -2,7 +2,8 @@
 
 import { createRoom, joinRoom, leaveRoom, setRoomLogger, setRoomCallbacks, getDoc, getRoomId, getExportedKey } from './room.js?v=3';
 import { setSignalingLogger } from './signaling.js?v=3';
-import { savePage, getPageContent, listPages, renderPage, onPagesChange, setPagesLogger } from './pages.js?v=3';
+// Note: room.js and signaling.js stay at v=3 (not modified by this agent)
+import { savePage, getPageContent, listPages, renderPage, onPagesChange, setPagesLogger, wrapHTML, gzipCompress } from './pages.js?v=4';
 
 const $ = (s) => document.querySelector(s);
 
@@ -138,11 +139,12 @@ async function openEditor(pageName, existingContent, existingType) {
       if (update.docChanged) schedulePreview();
     });
 
+    const type = editorType.value;
     _cmEditor = {
       view: new EditorView({
         state: EditorState.create({
           doc: existingContent || '',
-          extensions: [basicSetup, oneDark, langMap.html, updateListener],
+          extensions: [basicSetup, oneDark, langMap[type] || [], updateListener],
         }),
         parent: editorPane,
       }),
@@ -167,13 +169,31 @@ function schedulePreview() {
   _previewTimer = setTimeout(updatePreview, 300);
 }
 
-function updatePreview() {
+async function updatePreview() {
   if (!_cmEditor) return;
   const content = _cmEditor.view.state.doc.toString();
   const rawBytes = new TextEncoder().encode(content).length;
   counterRaw.textContent = `raw: ${formatBytes(rawBytes)}`;
-  // Preview not implemented inline (would need render.js), skip for now
-  previewContainer.innerHTML = `<div style="padding:0.5rem;color:#8a6a3e;font-size:0.7rem">${formatBytes(rawBytes)} — save to preview in iframe</div>`;
+
+  // Show compressed size
+  try {
+    const compressed = await gzipCompress(content);
+    counterCompressed.textContent = `compressed: ${formatBytes(compressed.byteLength)}`;
+  } catch {
+    counterCompressed.textContent = `compressed: —`;
+  }
+
+  // Render live preview in sandboxed iframe
+  const type = editorType.value;
+  const srcdoc = wrapHTML(content, type);
+  previewContainer.innerHTML = '';
+  const iframe = document.createElement('iframe');
+  iframe.sandbox = 'allow-scripts';
+  iframe.srcdoc = srcdoc;
+  iframe.style.width = '100%';
+  iframe.style.border = 'none';
+  iframe.style.minHeight = '280px';
+  previewContainer.appendChild(iframe);
 }
 
 // --- Event handlers ---
@@ -245,6 +265,7 @@ editorType.addEventListener('change', () => {
     doc,
     extensions: [basicSetup, oneDark, langMap[type] || [], updateListener],
   }));
+  schedulePreview();
 });
 
 copyLinkBtn.addEventListener('click', async () => {
