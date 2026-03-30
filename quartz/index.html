@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>quartz</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>sea of glass / <span class="accent">quartz</span></h1>
+      <p class="subtitle">encrypted collaboration — hidden services</p>
+    </header>
+
+    <!-- Landing: create or join room -->
+    <section id="landing-section">
+      <button id="create-btn" class="btn primary">create room</button>
+      <div class="join-group">
+        <input id="join-input" type="text" placeholder="paste room link or key" spellcheck="false">
+        <button id="join-btn" class="btn">join</button>
+      </div>
+    </section>
+
+    <!-- Room view -->
+    <section id="room-section" class="hidden">
+      <div class="room-header">
+        <div class="room-info">
+          <span class="label">room</span>
+          <code id="room-id">—</code>
+          <span id="peer-count" class="badge">0 peers</span>
+          <span id="conn-state" class="badge dim">disconnected</span>
+        </div>
+        <div class="room-actions">
+          <button id="copy-link-btn" class="btn small">copy link</button>
+          <button id="leave-btn" class="btn small danger">leave</button>
+        </div>
+      </div>
+
+      <!-- Shared text pad -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="label">shared pad</span>
+        </div>
+        <textarea id="pad" placeholder="start typing — syncs in real-time across all peers" spellcheck="false"></textarea>
+      </div>
+
+      <!-- Hidden services -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="label">services</span>
+          <button id="add-service-btn" class="btn small">+ add</button>
+        </div>
+        <div id="service-list" class="service-list"></div>
+        <div id="service-frame" class="service-frame hidden"></div>
+      </div>
+
+      <!-- Add service modal -->
+      <div id="add-service-modal" class="modal hidden">
+        <div class="modal-content">
+          <input id="service-name" type="text" placeholder="service name">
+          <textarea id="service-html" placeholder="paste HTML content"></textarea>
+          <div class="modal-actions">
+            <button id="service-cancel" class="btn small">cancel</button>
+            <button id="service-submit" class="btn small primary">add</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Log -->
+    <div id="log" class="log"></div>
+  </div>
+
+  <script type="module" src="js/ui.js"></script>
+</body>
+</html>
