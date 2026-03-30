@@ -119,7 +119,7 @@ export default {
 
     // Health check
     if (path === '/' || path === '/health') {
-      return json({ service: 'quartz-signal', status: 'ok' }, 200, origin);
+      return json({ service: 'quartz-relay', status: 'ok' }, 200, origin);
     }
 
     return json({ error: 'not found' }, 404, origin);

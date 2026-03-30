@@ -6,7 +6,7 @@ import { connect as wsConnect, send as wsSend, onMessage as wsOnMessage, disconn
 import { createPeerConnection, createOffer, createAnswer, acceptAnswer, onDataChannel, waitForOpen, setRtcLogger } from './rtc.js';
 import { createDoc, onLocalUpdate, applyRemoteUpdate, encodeFullState, decodeAndApplyState, setSyncLogger } from './sync.js';
 
-const WORKER_URL = 'wss://quartz-signal.seaofglass.workers.dev';
+const WORKER_URL = 'wss://quartz-relay.seaofglass.workers.dev';
 const STATE_SAVE_INTERVAL = 30000; // 30s
 
 let _state = 'idle';
