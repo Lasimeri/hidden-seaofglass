@@ -1,7 +1,7 @@
 // sync.js — Yjs CRDT wrapper with encrypted gossip
 
 import * as Y from 'https://cdn.jsdelivr.net/npm/yjs@13/+esm';
-import { encryptBinary, decryptBinary } from './crypto.js?v=2';
+import { encryptBinary, decryptBinary } from './crypto.js?v=3';
 
 let _log = () => {};
 export function setSyncLogger(fn) { _log = fn; }
@@ -9,8 +9,7 @@ export function setSyncLogger(fn) { _log = fn; }
 export function createDoc() {
   const doc = new Y.Doc();
   // Shared types
-  doc.getText('pad');       // collaborative text editor
-  doc.getMap('services');   // hidden service registry
+  doc.getMap('pages');      // page storage (ZeroNet-like)
   _log('yjs document created');
   return doc;
 }

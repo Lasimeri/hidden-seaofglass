@@ -4,13 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>quartz</title>
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css?v=3">
 </head>
 <body>
   <div class="container">
     <header>
       <h1>sea of glass / <span class="accent">quartz</span></h1>
-      <p class="subtitle">encrypted collaboration — hidden services</p>
+      <p class="subtitle">encrypted pages — hidden services</p>
     </header>
 
     <!-- Landing: create or join room -->
@@ -22,48 +22,62 @@
       </div>
     </section>
 
-    <!-- Room view -->
+    <!-- Room view: page browser -->
     <section id="room-section" class="hidden">
-      <div class="room-header">
-        <div class="room-info">
-          <span class="label">room</span>
-          <code id="room-id">—</code>
-          <span id="peer-count" class="badge">0 peers</span>
-          <span id="conn-state" class="badge dim">disconnected</span>
-        </div>
-        <div class="room-actions">
+      <!-- Room bar -->
+      <div class="room-bar">
+        <span class="label">room</span>
+        <code id="room-id">—</code>
+        <span id="peer-count" class="badge">0 peers</span>
+        <span id="conn-state" class="badge dim">idle</span>
+        <div class="room-bar-right">
           <button id="copy-link-btn" class="btn small">copy link</button>
           <button id="leave-btn" class="btn small danger">leave</button>
         </div>
       </div>
 
-      <!-- Shared text pad -->
-      <div class="panel">
-        <div class="panel-header">
-          <span class="label">shared pad</span>
-        </div>
-        <textarea id="pad" placeholder="start typing — syncs in real-time across all peers" spellcheck="false"></textarea>
+      <!-- Address bar (like archive.tax) -->
+      <div class="address-bar">
+        <span class="address-prefix">quartz://</span>
+        <input id="address-input" type="text" placeholder="page name" spellcheck="false">
+        <button id="go-btn" class="btn">go</button>
+        <button id="new-page-btn" class="btn primary">+ new</button>
       </div>
 
-      <!-- Hidden services -->
-      <div class="panel">
-        <div class="panel-header">
-          <span class="label">services</span>
-          <button id="add-service-btn" class="btn small">+ add</button>
+      <!-- Page list -->
+      <div id="page-list" class="page-list"></div>
+
+      <!-- Page viewer (iframe) -->
+      <div id="page-viewer" class="page-viewer hidden">
+        <div class="viewer-bar">
+          <span id="viewer-title" class="viewer-title"></span>
+          <button id="edit-page-btn" class="btn small">edit</button>
         </div>
-        <div id="service-list" class="service-list"></div>
-        <div id="service-frame" class="service-frame hidden"></div>
+        <div id="viewer-frame" class="viewer-frame"></div>
       </div>
 
-      <!-- Add service modal -->
-      <div id="add-service-modal" class="modal hidden">
-        <div class="modal-content">
-          <input id="service-name" type="text" placeholder="service name">
-          <textarea id="service-html" placeholder="paste HTML content"></textarea>
-          <div class="modal-actions">
-            <button id="service-cancel" class="btn small">cancel</button>
-            <button id="service-submit" class="btn small primary">add</button>
+      <!-- Editor view -->
+      <div id="editor-section" class="hidden">
+        <div class="editor-bar">
+          <input id="editor-page-name" type="text" placeholder="page name" spellcheck="false">
+          <select id="editor-type">
+            <option value="html">HTML</option>
+            <option value="markdown">Markdown</option>
+            <option value="text">Text</option>
+          </select>
+          <button id="editor-save-btn" class="btn primary small">save</button>
+          <button id="editor-cancel-btn" class="btn small">cancel</button>
+        </div>
+        <div class="editor-split">
+          <div id="editor-pane" class="pane"></div>
+          <div id="preview-pane" class="pane">
+            <div class="pane-label">preview</div>
+            <div id="preview-container"></div>
           </div>
+        </div>
+        <div class="counter-bar">
+          <span id="counter-raw">raw: 0 B</span>
+          <span id="counter-compressed">compressed: 0 B</span>
         </div>
       </div>
     </section>
@@ -72,6 +86,6 @@
     <div id="log" class="log"></div>
   </div>
 
-  <script type="module" src="js/ui.js?v=2"></script>
+  <script type="module" src="js/ui.js?v=3"></script>
 </body>
 </html>

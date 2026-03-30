@@ -1,7 +1,7 @@
-// services.js — ittybitty hidden service registry + sandboxed iframe rendering
+// pages.js — page storage in Yjs Y.Map + sandboxed iframe rendering
 
 let _log = () => {};
-export function setServicesLogger(fn) { _log = fn; }
+export function setPagesLogger(fn) { _log = fn; }
 
 const CSP = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data: blob: https:; font-src data:; media-src data: blob:; script-src 'unsafe-inline'">`;
 
@@ -12,6 +12,11 @@ body {
   max-width: 720px; margin: 0 auto; padding: 1rem;
   color: #c8c8d0; background: #0a0a0f; line-height: 1.5;
 }
+img { max-width: 100%; height: auto; }
+pre { overflow-x: auto; padding: 1rem; background: #12121a; border: 1px solid #1e1e2e; border-radius: 4px; }
+code { font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace; font-size: 0.9em; }
+a { color: #4a9eff; }
+h1,h2,h3,h4,h5,h6 { color: #e8e8f0; margin: 1.5em 0 0.5em; }
 `.trim();
 
 const RESIZE_SCRIPT = `
@@ -23,42 +28,61 @@ const RESIZE_SCRIPT = `
 <\/script>
 `;
 
-// Register a service in the Yjs doc
-export async function registerService(doc, name, htmlContent) {
-  const compressed = await gzipCompress(htmlContent);
+// Save a page to the Yjs doc
+export async function savePage(doc, name, content, type) {
+  const compressed = await gzipCompress(content);
   const encoded = bufToBase64url(new Uint8Array(compressed));
-  const servicesMap = doc.getMap('services');
-  servicesMap.set(name, encoded);
-  _log(`registered service: ${name}`);
+  const pagesMap = doc.getMap('pages');
+  pagesMap.set(name, JSON.stringify({ encoded, type: type || 'html', updated: Date.now() }));
+  _log(`saved page: ${name}`);
 }
 
-// List all services
-export function listServices(doc) {
-  const servicesMap = doc.getMap('services');
-  const services = [];
-  servicesMap.forEach((encoded, name) => {
-    services.push({ name, encoded });
+// Get a page's raw content
+export async function getPageContent(doc, name) {
+  const pagesMap = doc.getMap('pages');
+  const raw = pagesMap.get(name);
+  if (!raw) return null;
+  const { encoded, type } = JSON.parse(raw);
+  const compressed = base64urlToBuf(encoded);
+  const content = await gzipDecompress(compressed);
+  return { content, type };
+}
+
+// List all pages
+export function listPages(doc) {
+  const pagesMap = doc.getMap('pages');
+  const pages = [];
+  pagesMap.forEach((raw, name) => {
+    try {
+      const { type, updated } = JSON.parse(raw);
+      pages.push({ name, type, updated });
+    } catch {
+      pages.push({ name, type: 'html', updated: 0 });
+    }
   });
-  return services;
+  return pages.sort((a, b) => b.updated - a.updated);
 }
 
-// Remove a service
-export function removeService(doc, name) {
-  doc.getMap('services').delete(name);
-  _log(`removed service: ${name}`);
+// Delete a page
+export function deletePage(doc, name) {
+  doc.getMap('pages').delete(name);
+  _log(`deleted page: ${name}`);
 }
 
-// Render a service in a sandboxed iframe
-export async function renderService(container, encoded) {
+// Render a page in a sandboxed iframe
+export async function renderPage(container, doc, name) {
   container.innerHTML = '';
 
-  const compressed = base64urlToBuf(encoded);
-  const html = await gzipDecompress(compressed);
+  const page = await getPageContent(doc, name);
+  if (!page) {
+    container.innerHTML = '<div class="not-found">page not found</div>';
+    return null;
+  }
 
-  const srcdoc = wrapHTML(html);
+  const srcdoc = wrapHTML(page.content, page.type);
 
   const iframe = document.createElement('iframe');
-  iframe.sandbox = 'allow-scripts'; // no allow-same-origin
+  iframe.sandbox = 'allow-scripts';
   iframe.srcdoc = srcdoc;
   iframe.style.width = '100%';
   iframe.style.border = 'none';
@@ -74,23 +98,32 @@ export async function renderService(container, encoded) {
   return iframe;
 }
 
-// Observe service changes
-export function onServicesChange(doc, callback) {
-  doc.getMap('services').observe(() => {
-    callback(listServices(doc));
+// Observe page changes
+export function onPagesChange(doc, callback) {
+  doc.getMap('pages').observe(() => {
+    callback(listPages(doc));
   });
 }
 
 // --- helpers ---
 
-function wrapHTML(body) {
+function wrapHTML(body, type) {
+  let rendered = body;
+  if (type === 'text') {
+    rendered = `<pre>${escapeHTML(body)}</pre>`;
+  }
+  // markdown would need marked.js — for now treat as HTML
   return `<!DOCTYPE html>
 <html><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 ${CSP}
 <style>${DEFAULT_STYLE}</style>
-</head><body>${body}${RESIZE_SCRIPT}</body></html>`;
+</head><body>${rendered}${RESIZE_SCRIPT}</body></html>`;
+}
+
+function escapeHTML(str) {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 async function gzipCompress(text) {
@@ -109,10 +142,7 @@ async function gzipCompress(text) {
   const total = chunks.reduce((a, c) => a + c.length, 0);
   const result = new Uint8Array(total);
   let offset = 0;
-  for (const chunk of chunks) {
-    result.set(chunk, offset);
-    offset += chunk.length;
-  }
+  for (const chunk of chunks) { result.set(chunk, offset); offset += chunk.length; }
   return result.buffer;
 }
 
@@ -131,16 +161,16 @@ async function gzipDecompress(data) {
   const total = chunks.reduce((a, c) => a + c.length, 0);
   const result = new Uint8Array(total);
   let offset = 0;
-  for (const chunk of chunks) {
-    result.set(chunk, offset);
-    offset += chunk.length;
-  }
+  for (const chunk of chunks) { result.set(chunk, offset); offset += chunk.length; }
   return new TextDecoder().decode(result);
 }
 
 function bufToBase64url(buf) {
   let binary = '';
-  for (const byte of buf) binary += String.fromCharCode(byte);
+  // Chunked to avoid stack overflow on large arrays
+  for (let i = 0; i < buf.length; i += 8192) {
+    binary += String.fromCharCode.apply(null, buf.subarray(i, i + 8192));
+  }
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 

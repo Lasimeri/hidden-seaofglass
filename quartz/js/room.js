@@ -1,10 +1,10 @@
 // room.js — room lifecycle orchestrator
 // State machine: idle → connecting → signaling → connected → disconnected
 
-import { generateKey, exportKey, importKey, deriveRoomId, encrypt, decrypt, encryptBinary, decryptBinary } from './crypto.js?v=2';
-import { connect as wsConnect, send as wsSend, onMessage as wsOnMessage, disconnect as wsDisconnect, isConnected as wsIsConnected } from './signaling.js?v=2';
-import { createPeerConnection, createOffer, createAnswer, acceptAnswer, onDataChannel, waitForOpen, setRtcLogger } from './rtc.js?v=2';
-import { createDoc, onLocalUpdate, applyRemoteUpdate, encodeFullState, decodeAndApplyState, setSyncLogger } from './sync.js?v=2';
+import { generateKey, exportKey, importKey, deriveRoomId, encrypt, decrypt, encryptBinary, decryptBinary } from './crypto.js?v=3';
+import { connect as wsConnect, send as wsSend, onMessage as wsOnMessage, disconnect as wsDisconnect, isConnected as wsIsConnected } from './signaling.js?v=3';
+import { createPeerConnection, createOffer, createAnswer, acceptAnswer, onDataChannel, waitForOpen, setRtcLogger } from './rtc.js?v=3';
+import { createDoc, onLocalUpdate, applyRemoteUpdate, encodeFullState, decodeAndApplyState, setSyncLogger } from './sync.js?v=3';
 
 const WORKER_URL = 'wss://quartz-relay.seaofglass.workers.dev';
 const STATE_SAVE_INTERVAL = 30000; // 30s
@@ -41,6 +41,7 @@ export function getState() { return _state; }
 export function getRoomId() { return _roomId; }
 export function getDoc() { return _doc; }
 export function getPeerCount() { return _peers.size; }
+export async function getExportedKey() { return _key ? exportKey(_key) : null; }
 
 // Create a new room — returns { key (base64url), roomId }
 export async function createRoom() {
