@@ -1,8 +1,8 @@
 // ui.js — DOM bindings and entry point
 
-import { createRoom, joinRoom, leaveRoom, setRoomLogger, setRoomCallbacks, getDoc, getRoomId, getPeerCount } from './room.js';
-import { setSignalingLogger } from './signaling.js';
-import { listServices, registerService, renderService, onServicesChange, setServicesLogger } from './services.js';
+import { createRoom, joinRoom, leaveRoom, setRoomLogger, setRoomCallbacks, getDoc, getRoomId, getPeerCount } from './room.js?v=2';
+import { setSignalingLogger } from './signaling.js?v=2';
+import { listServices, registerService, renderService, onServicesChange, setServicesLogger } from './services.js?v=2';
 
 // --- DOM refs ---
 const $ = (s) => document.querySelector(s);

@@ -1,10 +1,10 @@
 // room.js — room lifecycle orchestrator
 // State machine: idle → connecting → signaling → connected → disconnected
 
-import { generateKey, exportKey, importKey, deriveRoomId, encrypt, decrypt, encryptBinary, decryptBinary } from './crypto.js';
-import { connect as wsConnect, send as wsSend, onMessage as wsOnMessage, disconnect as wsDisconnect, isConnected as wsIsConnected } from './signaling.js';
-import { createPeerConnection, createOffer, createAnswer, acceptAnswer, onDataChannel, waitForOpen, setRtcLogger } from './rtc.js';
-import { createDoc, onLocalUpdate, applyRemoteUpdate, encodeFullState, decodeAndApplyState, setSyncLogger } from './sync.js';
+import { generateKey, exportKey, importKey, deriveRoomId, encrypt, decrypt, encryptBinary, decryptBinary } from './crypto.js?v=2';
+import { connect as wsConnect, send as wsSend, onMessage as wsOnMessage, disconnect as wsDisconnect, isConnected as wsIsConnected } from './signaling.js?v=2';
+import { createPeerConnection, createOffer, createAnswer, acceptAnswer, onDataChannel, waitForOpen, setRtcLogger } from './rtc.js?v=2';
+import { createDoc, onLocalUpdate, applyRemoteUpdate, encodeFullState, decodeAndApplyState, setSyncLogger } from './sync.js?v=2';
 
 const WORKER_URL = 'wss://quartz-relay.seaofglass.workers.dev';
 const STATE_SAVE_INTERVAL = 30000; // 30s
